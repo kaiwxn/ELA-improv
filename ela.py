@@ -47,16 +47,16 @@ def detect_manipulation(ela_image, threshold=35.0):
     mean_val = ela_array.mean()
     std_val = ela_array.std()
 
-    manipulated = mean_val > threshold
+    manipulated = std_val > threshold
 
     return manipulated, mean_val, std_val
 
 
 def main():
-    QUALITY = 90
+    QUALITY = 95
     THRESHOLD = 35.0
-    test_image_path = './z_shear.jpg'
-    saved_ela_img_path = f'./img/z_shear_ela{QUALITY}.png'
+    test_image_path = './z_lion.png'
+    saved_ela_img_path = f'./img/z_lion_ela{QUALITY}.png'
 
     # ELA berechnen
     ela = convert_to_ela_image(test_image_path, quality=QUALITY)
