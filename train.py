@@ -4,8 +4,8 @@ import random
 import torch
 import numpy as np
 from PIL import Image
-from torchvision import datasets, transforms
-
+from torchvision import transforms
+from torch.utils.data import Dataset, DataLoader
 from ela import convert_to_ela_image
 
 
@@ -16,6 +16,53 @@ def load_dataset():
     path = kagglehub.dataset_download("divg07/casia-20-image-tampering-detection-dataset", path="data/")
     print("Path to dataset files:", path)
 
+
+class CASIADataset(Dataset):
+    def __init__(self, root_dir, transform=None, max_samples_per_class=None):
+        """
+        root_dir: path containing 'Au' (authentic) and 'Tp' (tampered)
+        transform: torchvision transform pipeline
+        max_samples_per_class: optional limit per class
+        """
+        self.samples = []
+        self.transform = transform
+
+        auth_dir = os.path.join(root_dir, "Au")
+        tampered_dir = os.path.join(root_dir, "Tp")
+
+        # Authentic = label 1
+        for dirname, _, filenames in os.walk(auth_dir):
+            for filename in filenames:
+                if filename.lower().endswith(("jpg", "png")):
+                    self.samples.append((os.path.join(dirname, filename), 1))
+                    if max_samples_per_class and len(
+                        [s for s in self.samples if s[1] == 1]
+                    ) >= max_samples_per_class:
+                        break
+
+        # Tampered = label 0
+        for dirname, _, filenames in os.walk(tampered_dir):
+            for filename in filenames:
+                if filename.lower().endswith(("jpg", "png")):
+                    self.samples.append((os.path.join(dirname, filename), 0))
+                    if max_samples_per_class and len(
+                        [s for s in self.samples if s[1] == 0]
+                    ) >= max_samples_per_class:
+                        break
+
+        print(f"Total samples loaded: {len(self.samples)}")
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        path, label = self.samples[idx]
+        img = Image.open(path).convert("RGB")
+
+        if self.transform:
+            img = self.transform(img)
+
+        return img, torch.tensor(label, dtype=torch.long), path
 
 class ELA:
     def __init__(self, quality=90):
@@ -157,35 +204,32 @@ def main():
         transforms.ToTensor(),
     ])
 
-    # X: images, Y: labels
-    X, Y = [], []
+    dataset = CASIADataset("./data/CASIA2", transform=preprocess, max_samples_per_class=1000)
 
-    # Load auth images
-    path_real = './data/CASIA2/Au'
-    for dirname, _, filenames in os.walk(path_real):
-        for filename in filenames:
-            if filename.endswith(('jpg', 'png')):
-                img = Image.open(os.path.join(dirname, filename))
-                X.append(preprocess(img))
-                Y.append(1)
-                if len(Y) == 1000:
-                    break
+    # Split train/test 80/20
+    total_size = len(dataset)
+    train_size = int(0.8 * total_size)
+    test_size = total_size - train_size
+    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
-    path_real = './data/CASIA2/Tp'
-    for dirname, _, filenames in os.walk(path_real):
-        for filename in filenames:
-            if filename.endswith(('jpg', 'png')):
-                img = Image.open(os.path.join(dirname, filename))
-                X.append(preprocess(img))
-                Y.append(0)
-                if len(Y) == 2000:
-                    break
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=4)
 
-    print(f'Total images processed: {len(Y)}')
+    print(f"Train size: {len(train_dataset)}, Test size: {len(test_dataset)}")
 
+
+    model = CNN().to(device)
+
+    # Collect only the parameters that require gradient computation
+    params = [p for p in model.parameters() if p.requires_grad]
+
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(params, lr=1e-3)
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.9)
     
-
-    t = Trainer()
+    trainer = Trainer(model, device, loss_fn, optimizer, scheduler=None)
+    
+    print(trainer.run_epochs(EPOCHS=10, train_dataloader=train_loader, valid_dataloader=test_loader))
 
 
 
