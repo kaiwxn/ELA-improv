@@ -14,9 +14,8 @@ import io
 import numpy as np
 from PIL import Image, ImageChops, ImageEnhance
 
-def convert_to_ela_image(path, quality):
+def convert_to_ela_image(image, quality = 90):
 
-    image = Image.open(path).convert('RGB')
 
     # Save the image at a lower quality level
     # JPEG in-memory speichern (kein temporäres Datei)
