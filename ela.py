@@ -14,7 +14,7 @@ import io
 import numpy as np
 from PIL import Image, ImageChops, ImageEnhance
 
-def convert_to_ela_image(image, quality = 90):
+def convert_to_ela_image(image, quality):
 
 
     # Save the image at a lower quality level
