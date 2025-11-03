@@ -16,7 +16,6 @@ from PIL import Image, ImageChops, ImageEnhance
 
 def convert_to_ela_image(image, quality):
 
-
     # Save the image at a lower quality level
     # JPEG in-memory speichern (kein temporäres Datei)
     buffer = io.BytesIO()

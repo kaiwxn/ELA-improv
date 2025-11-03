@@ -6,63 +6,13 @@ import numpy as np
 from PIL import Image
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
+
 from ela import convert_to_ela_image
+from model import CNN
+from dataset import CASIADataset
 
+from plot import plot_losses
 
-def load_dataset():
-    import kagglehub
-
-    # Download latest version
-    path = kagglehub.dataset_download("divg07/casia-20-image-tampering-detection-dataset", path="data/")
-    print("Path to dataset files:", path)
-
-
-class CASIADataset(Dataset):
-    def __init__(self, root_dir, transform=None, max_samples_per_class=None):
-        """
-        root_dir: path containing 'Au' (authentic) and 'Tp' (tampered)
-        transform: torchvision transform pipeline
-        max_samples_per_class: optional limit per class
-        """
-        self.samples = []
-        self.transform = transform
-
-        auth_dir = os.path.join(root_dir, "Au")
-        tampered_dir = os.path.join(root_dir, "Tp")
-
-        # Authentic = label 1
-        for dirname, _, filenames in os.walk(auth_dir):
-            for filename in filenames:
-                if filename.lower().endswith(("jpg", "png")):
-                    self.samples.append((os.path.join(dirname, filename), 1))
-                    if max_samples_per_class and len(
-                        [s for s in self.samples if s[1] == 1]
-                    ) >= max_samples_per_class:
-                        break
-
-        # Tampered = label 0
-        for dirname, _, filenames in os.walk(tampered_dir):
-            for filename in filenames:
-                if filename.lower().endswith(("jpg", "png")):
-                    self.samples.append((os.path.join(dirname, filename), 0))
-                    if max_samples_per_class and len(
-                        [s for s in self.samples if s[1] == 0]
-                    ) >= max_samples_per_class:
-                        break
-
-        print(f"Total samples loaded: {len(self.samples)}")
-
-    def __len__(self):
-        return len(self.samples)
-
-    def __getitem__(self, idx):
-        path, label = self.samples[idx]
-        img = Image.open(path).convert("RGB")
-
-        if self.transform:
-            img = self.transform(img)
-
-        return img, torch.tensor(label, dtype=torch.long), path
 
 class ELA:
     def __init__(self, quality=90):
@@ -73,12 +23,11 @@ class ELA:
 
 class Trainer:
 
-    def __init__(self, model, device, loss_fn, optimizer, scheduler):
+    def __init__(self, model, device, loss_fn, optimizer):
         self.model = model
         self.device = device
         self.loss_fn = loss_fn
         self.optimizer = optimizer
-        self.scheduler = scheduler
 
     def train(self, dataloader):
         size = len(dataloader.dataset)
@@ -146,7 +95,6 @@ class Trainer:
             train_loss = self.train(train_dataloader)
             train_losses.append(train_loss)
 
-            self.scheduler.step()
             validation_loss, accuracy = self.validate(valid_dataloader)
 
             validation_losses.append(validation_loss)
@@ -180,6 +128,10 @@ def main():
 
     DOWNLOAD 2.0:
     https://www.kaggle.com/datasets/divg07/casia-20-image-tampering-detection-dataset/data 
+
+    Vorteil:
+    -> Problem bei ELA ist, dass die Erkennung der Manipulation dennoch manuell erfolgen muss.
+    -> Mit einem CNN kann das Modell lernen, die Manipulationen automatisch zu erkennen.
     """
 
     # enable CUDA if available
@@ -204,7 +156,9 @@ def main():
         transforms.ToTensor(),
     ])
 
-    dataset = CASIADataset("./data/CASIA2", transform=preprocess, max_samples_per_class=1000)
+    # dataset = CASIADataset("./data/CASIA2", transform=preprocess, max_samples_per_class=1000)
+    dataset = CASIADataset("./data/CASIA2", transform=preprocess)
+
 
     # Split train/test 80/20
     total_size = len(dataset)
@@ -227,9 +181,13 @@ def main():
     optimizer = torch.optim.Adam(params, lr=1e-3)
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.9)
     
-    trainer = Trainer(model, device, loss_fn, optimizer, scheduler=None)
+    trainer = Trainer(model, device, loss_fn, optimizer)
     
-    print(trainer.run_epochs(EPOCHS=10, train_dataloader=train_loader, valid_dataloader=test_loader))
+    train_losses, validation_losses, validation_loss, validation_accuracy = trainer.run_epochs(EPOCHS=5, train_dataloader=train_loader, valid_dataloader=test_loader)
+
+    
+    torch.save(model.state_dict(), "EPOCH5.pth")
+    plot_losses("EPOCH5", train_losses, validation_losses)
 
 
 
