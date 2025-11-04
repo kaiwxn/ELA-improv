@@ -20,6 +20,8 @@ def plot_losses(model_name, train_losses, validation_losses):
     plt.plot(epochs, validation_losses, label="Validation Loss")
     plt.legend()
 
+    plt.ylim(bottom=0)
+    
     plt.savefig(
         os.path.join(
             os.path.dirname(__file__), "loss_plot_" + model_name + ".png"

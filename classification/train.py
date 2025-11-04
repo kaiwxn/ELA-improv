@@ -8,7 +8,7 @@ from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 
 from ela import convert_to_ela_image
-from model import CNN
+from model import CNN, DeepCNN
 from dataset import CASIADataset
 
 from plot import plot_losses
@@ -134,7 +134,7 @@ def main():
     -> Mit einem CNN kann das Modell lernen, die Manipulationen automatisch zu erkennen.
     """
 
-    MODEL_NAME = "CNN_ELA_10_80%"
+    MODEL_NAME = "CNN_ELA_DEEPER_CNN_10_NORMALIZE"
     EPOCHS = 10
 
     # enable CUDA if available
@@ -144,52 +144,42 @@ def main():
         torch.cuda.empty_cache()
         torch.backends.cudnn.benchmark = True
 
-    # deterministic seeds
-    seed = 42
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if device.type == "cuda":
-        torch.cuda.manual_seed_all(seed)
 
     preprocess = transforms.Compose([
         transforms.Grayscale(num_output_channels=3),
-        transforms.Resize((128, 128)),
         ELA(quality=80),
         transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
     ])
 
-    # dataset = CASIADataset("./data/CASIA2", transform=preprocess, max_samples_per_class=1000)
     dataset = CASIADataset("./data/CASIA2", transform=preprocess)
 
-    total_size = len(dataset)
-
     # --- SPLIT: 70/15/15 ---
+    total_size = len(dataset)
     train_size = int(0.7 * total_size)
     val_size = int(0.15 * total_size)
     test_size = total_size - train_size - val_size
 
-    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(
-        dataset, [train_size, val_size, test_size],
-        generator=torch.Generator().manual_seed(seed)
-    )
+    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, val_size, test_size],)
 
     print(f"Dataset sizes → Train: {train_size}, Val: {val_size}, Test: {test_size}")
 
     # --- DATALOADERS ---
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4)
-    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False, num_workers=4)
+    test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=4)
+
 
     # --- MODEL SETUP ---
-    model = CNN().to(device)
+    model = DeepCNN().to(device)
     params = [p for p in model.parameters() if p.requires_grad]
     loss_fn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(params, lr=1e-3)
-    
-    trainer = Trainer(model, device, loss_fn, optimizer)
+    optimizer = torch.optim.Adam(params, lr=1e-4)
+    # optimizer = torch.optim.SGD(params, lr=1e-4, momentum=0.9)
+
 
     # --- TRAINING ---
+    trainer = Trainer(model, device, loss_fn, optimizer)
     train_losses, val_losses, val_loss, val_acc = trainer.run_epochs(
         EPOCHS=EPOCHS,
         train_dataloader=train_loader,
@@ -200,8 +190,6 @@ def main():
     model_path = f"{MODEL_NAME}.pth"
     torch.save(model.state_dict(), model_path)
     print(f"Model saved to {model_path}")
-
-    
 
     # --- FINAL TEST EVALUATION ---
     print("\nEvaluating on TEST set...")

@@ -52,16 +52,18 @@ def detect_manipulation(ela_image, threshold=35.0):
 
 
 def main():
-    QUALITY = 85
+    QUALITY = 90
     THRESHOLD = 35.0
-    test_image_path = "manual/zebra.jpg"
-    saved_ela_img_path = f'manual/img/zebra_ela{QUALITY}_enhanced.png'
+    test_image_path = "./data/CASIA2\\Au\\Au_ani_00001.jpg"
+    # test_image_path = "./data/CASIA2\\Tp\\Tp_D_NNN_M_N_txt00013_txt00019_10847.jpg"
+
+    saved_ela_img_path = f'manual/img/384x256imgtest{QUALITY}_enhanced.png'
 
     # ELA berechnen
     ela = convert_to_ela_image(Image.open(test_image_path).convert("RGB"), quality=QUALITY)
 
     ela = ImageEnhance.Brightness(ela).enhance(2.0)  # Kontrast erhöhen für bessere Sichtbarkeit
-    ela.save(saved_ela_img_path)
+    # ela.save(saved_ela_img_path)
 
     ela.show()
     # Manipulation erkennen

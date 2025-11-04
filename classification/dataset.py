@@ -1,6 +1,6 @@
 
 from torch.utils.data import Dataset
-from PIL import Image
+from PIL import Image, ImageOps
 import torch
 
 import os
@@ -32,7 +32,10 @@ class CASIADataset(Dataset):
         for dirname, _, filenames in os.walk(auth_dir):
             for filename in filenames:
                 if filename.lower().endswith(("jpg", "png")):
+                    if Image.open(os.path.join(dirname, filename)).size != (384, 256):
+                        continue
                     self.samples.append((os.path.join(dirname, filename), 1))
+                    # print(self.samples[-1])
                     if max_samples_per_class and len(
                         [s for s in self.samples if s[1] == 1]
                     ) >= max_samples_per_class:
@@ -42,7 +45,10 @@ class CASIADataset(Dataset):
         for dirname, _, filenames in os.walk(tampered_dir):
             for filename in filenames:
                 if filename.lower().endswith(("jpg", "png")):
+                    if Image.open(os.path.join(dirname, filename)).size != (384, 256):
+                        continue
                     self.samples.append((os.path.join(dirname, filename), 0))
+                    # print(self.samples[-1])
                     if max_samples_per_class and len(
                         [s for s in self.samples if s[1] == 0]
                     ) >= max_samples_per_class:
@@ -50,14 +56,26 @@ class CASIADataset(Dataset):
 
         print(f"Total samples loaded: {len(self.samples)}")
 
+       
+
     def __len__(self):
         return len(self.samples)
 
+
     def __getitem__(self, idx):
-        path, label = self.samples[idx]
-        img = Image.open(path).convert("RGB")
+        """
+        Wegen der unterschiedlichen Bildgrößen in CASIA wird hier das Bild
+        quadratisch gepaddet, bevor die Transformationen angewendet werden.
+        """
+        img_path, label = self.samples[idx]
+        image = Image.open(img_path).convert("RGB")
 
+        # # --- Padding: Quadratisches Bild erzeugen ---
+        # max_side = max(image.size)
+        # image = ImageOps.pad(image, (max_side, max_side), color=(0,0,0))  # schwarze Ränder
+
+        
         if self.transform:
-            img = self.transform(img)
+            image = self.transform(image)
 
-        return img, torch.tensor(label, dtype=torch.long), path
+        return image, torch.tensor(label), img_path

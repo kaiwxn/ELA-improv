@@ -1,7 +1,7 @@
 import torch
 from torchvision import transforms
 from PIL import Image
-from model import CNN
+from model import CNN, DeepCNN
 from ela import convert_to_ela_image
 
 # --- Hilfsklasse für ELA-Vorverarbeitung ---
@@ -24,15 +24,15 @@ def predict_image(model_path, image_path, quality=90):
     print(f"Using device: {device}")
 
     # --- Modell laden ---
-    model = CNN().to(device)
+    model = DeepCNN().to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
 
     
     transform = transforms.Compose([
         transforms.Grayscale(num_output_channels=3),
-        transforms.Resize((128, 128)),
         ELA(quality=quality),
+        transforms.Resize((384, 256)),
         transforms.ToTensor(),
     ])
     
@@ -61,7 +61,7 @@ def predict_image(model_path, image_path, quality=90):
 
 # --- Beispielhafte Nutzung ---
 if __name__ == "__main__":
-    model_path = "CNN_ELA_20.pth"          # Pfad zum trainierten Modell
+    model_path = "CNN_ELA_SGD_256x384.pth"          # Pfad zum trainierten Modell
     image_path = "./images/zebra.jpg"  # Pfad zum Bild, das geprüft werden soll
 
     label, conf = predict_image(model_path, image_path)
