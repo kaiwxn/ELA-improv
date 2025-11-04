@@ -1,4 +1,6 @@
 *.png
+*.jpg
+*.jpeg
 
 .kaggle/
 data/*
@@ -8,3 +10,4 @@ data/*
 
 
 __pycache__/
+.venv/

@@ -11,6 +11,7 @@
 """
 
 import io
+import os
 import numpy as np
 from PIL import Image, ImageChops, ImageEnhance
 
@@ -51,13 +52,15 @@ def detect_manipulation(ela_image, threshold=35.0):
 
 
 def main():
-    QUALITY = 95
+    QUALITY = 85
     THRESHOLD = 35.0
-    test_image_path = './z_lion.png'
-    saved_ela_img_path = f'./img/z_lion_ela{QUALITY}.png'
+    test_image_path = "manual/zebra.jpg"
+    saved_ela_img_path = f'manual/img/zebra_ela{QUALITY}_enhanced.png'
 
     # ELA berechnen
-    ela = convert_to_ela_image(test_image_path, quality=QUALITY)
+    ela = convert_to_ela_image(Image.open(test_image_path).convert("RGB"), quality=QUALITY)
+
+    ela = ImageEnhance.Brightness(ela).enhance(2.0)  # Kontrast erhöhen für bessere Sichtbarkeit
     ela.save(saved_ela_img_path)
 
     ela.show()

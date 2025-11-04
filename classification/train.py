@@ -134,6 +134,9 @@ def main():
     -> Mit einem CNN kann das Modell lernen, die Manipulationen automatisch zu erkennen.
     """
 
+    MODEL_NAME = "CNN_ELA_10_80%"
+    EPOCHS = 10
+
     # enable CUDA if available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -152,44 +155,72 @@ def main():
     preprocess = transforms.Compose([
         transforms.Grayscale(num_output_channels=3),
         transforms.Resize((128, 128)),
-        ELA(),
+        ELA(quality=80),
         transforms.ToTensor(),
     ])
 
     # dataset = CASIADataset("./data/CASIA2", transform=preprocess, max_samples_per_class=1000)
     dataset = CASIADataset("./data/CASIA2", transform=preprocess)
 
-
-    # Split train/test 80/20
     total_size = len(dataset)
-    train_size = int(0.8 * total_size)
-    test_size = total_size - train_size
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
+    # --- SPLIT: 70/15/15 ---
+    train_size = int(0.7 * total_size)
+    val_size = int(0.15 * total_size)
+    test_size = total_size - train_size - val_size
+
+    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(
+        dataset, [train_size, val_size, test_size],
+        generator=torch.Generator().manual_seed(seed)
+    )
+
+    print(f"Dataset sizes → Train: {train_size}, Val: {val_size}, Test: {test_size}")
+
+    # --- DATALOADERS ---
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=4)
 
-    print(f"Train size: {len(train_dataset)}, Test size: {len(test_dataset)}")
-
-
+    # --- MODEL SETUP ---
     model = CNN().to(device)
-
-    # Collect only the parameters that require gradient computation
     params = [p for p in model.parameters() if p.requires_grad]
-
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(params, lr=1e-3)
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.9)
     
     trainer = Trainer(model, device, loss_fn, optimizer)
-    
-    train_losses, validation_losses, validation_loss, validation_accuracy = trainer.run_epochs(EPOCHS=5, train_dataloader=train_loader, valid_dataloader=test_loader)
+
+    # --- TRAINING ---
+    train_losses, val_losses, val_loss, val_acc = trainer.run_epochs(
+        EPOCHS=EPOCHS,
+        train_dataloader=train_loader,
+        valid_dataloader=val_loader
+    )
+
+    # --- SAVE MODEL ---
+    model_path = f"{MODEL_NAME}.pth"
+    torch.save(model.state_dict(), model_path)
+    print(f"Model saved to {model_path}")
 
     
-    torch.save(model.state_dict(), "EPOCH5.pth")
-    plot_losses("EPOCH5", train_losses, validation_losses)
+
+    # --- FINAL TEST EVALUATION ---
+    print("\nEvaluating on TEST set...")
+    test_loss, test_accuracy = trainer.validate(test_loader)
+    print(f"Final Test Accuracy: {test_accuracy * 100:.2f}% | Test Loss: {test_loss:.4f}")
+
+    # --- PLOT LOSSES ---
+    plot_losses(MODEL_NAME, train_losses, val_losses)
 
 
+    """
+    Example output after 20 epochs:
+    
+    Training error: 
+    Avg loss: 0.090731
+
+    Validation Error: 
+    Accuracy: 91.2%, Avg loss: 0.406676
+    """
 
 if __name__ == "__main__":
     main()
