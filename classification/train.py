@@ -134,8 +134,8 @@ def main():
     -> Mit einem CNN kann das Modell lernen, die Manipulationen automatisch zu erkennen.
     """
 
-    MODEL_NAME = "CNN_ELA_DEEPER_CNN_10_NORMALIZE"
-    EPOCHS = 10
+    MODEL_NAME = "CNN_ELA_DEEPER_CNN_20_NORMALIZE"
+    EPOCHS = 20
 
     # enable CUDA if available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -201,13 +201,19 @@ def main():
 
 
     """
-    Example output after 20 epochs:
-    
     Training error: 
-    Avg loss: 0.090731
+    Avg loss: 0.128739
 
     Validation Error: 
-    Accuracy: 91.2%, Avg loss: 0.406676
+    Accuracy: 92.1%, Avg loss: 0.224264
+
+    Model saved to CNN_ELA_DEEPER_CNN_10_NORMALIZE.pth
+
+    Evaluating on TEST set...
+    Validation Error: 
+    Accuracy: 93.3%, Avg loss: 0.191646
+
+    Final Test Accuracy: 93.33% | Test Loss: 0.1916
     """
 
 if __name__ == "__main__":
