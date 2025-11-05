@@ -134,8 +134,8 @@ def main():
     -> Mit einem CNN kann das Modell lernen, die Manipulationen automatisch zu erkennen.
     """
 
-    MODEL_NAME = "CNN_ELA_DEEPER_CNN_20_NORMALIZE"
-    EPOCHS = 20
+    MODEL_NAME = "CNN_ELA_DEEPER_CNN_20_NORM_wdc5_nogray"
+    EPOCHS = 15
 
     # enable CUDA if available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -146,7 +146,7 @@ def main():
 
 
     preprocess = transforms.Compose([
-        transforms.Grayscale(num_output_channels=3),
+        # transforms.Grayscale(num_output_channels=3),
         ELA(quality=80),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
@@ -174,7 +174,7 @@ def main():
     model = DeepCNN().to(device)
     params = [p for p in model.parameters() if p.requires_grad]
     loss_fn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(params, lr=1e-4)
+    optimizer = torch.optim.Adam(params, lr=1e-4, weight_decay=1e-5)
     # optimizer = torch.optim.SGD(params, lr=1e-4, momentum=0.9)
 
 
@@ -214,6 +214,25 @@ def main():
     Accuracy: 93.3%, Avg loss: 0.191646
 
     Final Test Accuracy: 93.33% | Test Loss: 0.1916
+
+
+    ----
+    Model saved to CNN_ELA_DEEPER_CNN_10_NORM_wdc5.pth
+
+    Evaluating on TEST set...
+    Validation Error: 
+    Accuracy: 93.6%, Avg loss: 0.197998
+
+    Final Test Accuracy: 93.57% | Test Loss: 0.1980
+
+    ----
+    Model saved to CNN_ELA_DEEPER_CNN_15_NORM_wdc5.pth
+
+    Evaluating on TEST set...
+    Validation Error: 
+    Accuracy: 95.2%, Avg loss: 0.170730
+
+    Final Test Accuracy: 95.20% | Test Loss: 0.1707
     """
 
 if __name__ == "__main__":

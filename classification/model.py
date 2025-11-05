@@ -58,7 +58,7 @@ class DeepCNN(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(2),  # 128x192 → 64x96
 
-            # Block 5
+            # Block 3
             nn.Conv2d(64, 512, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
             nn.Conv2d(512, 512, kernel_size=3, stride=2, padding=1),
