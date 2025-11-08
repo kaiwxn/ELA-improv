@@ -1,12 +1,11 @@
-*.png
-*.jpg
-*.jpeg
+
+classification/graphs/*
+*.pth
 
 .kaggle/
 data/CASIA2/*
 
 
-*.pth
 
 
 __pycache__/
