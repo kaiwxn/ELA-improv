@@ -1,14 +1,10 @@
 
-import os
-import random
 import torch
-import numpy as np
-from PIL import Image
 from torchvision import transforms
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 
 from ela import convert_to_ela_image
-from model import CNN, DeepCNN
+from model import DeepCNN
 from dataset import CASIADataset
 
 from plot import plot_losses
@@ -154,7 +150,7 @@ def main():
 
     dataset = CASIADataset("./data/CASIA2", transform=preprocess)
 
-    # --- SPLIT: 70/15/15 ---
+    # --- Dataset SPLIT: 70/15/15 ---
     total_size = len(dataset)
     train_size = int(0.7 * total_size)
     val_size = int(0.15 * total_size)
@@ -191,7 +187,7 @@ def main():
     torch.save(model.state_dict(), model_path)
     print(f"Model saved to {model_path}")
 
-    # --- FINAL TEST EVALUATION ---
+    # --- EVALUATE ON TEST SET ---
     print("\nEvaluating on TEST set...")
     test_loss, test_accuracy = trainer.validate(test_loader)
     print(f"Final Test Accuracy: {test_accuracy * 100:.2f}% | Test Loss: {test_loss:.4f}")

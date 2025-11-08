@@ -1,10 +1,9 @@
 import torch
 from torchvision import transforms
 from PIL import Image
-from model import CNN, DeepCNN
+from model import DeepCNN
 from ela import convert_to_ela_image
 
-# --- Hilfsklasse für ELA-Vorverarbeitung ---
 class ELA:
     def __init__(self, quality=90):
         self.quality = quality
@@ -59,7 +58,6 @@ def predict_image(model_path, image_path, quality=90):
     return label_map[pred_class], confidence # type: ignore
 
 
-# --- Beispielhafte Nutzung ---
 if __name__ == "__main__":
     model_path = "CNN_ELA_SGD_256x384.pth"          # Pfad zum trainierten Modell
     image_path = "./images/zebra.jpg"  # Pfad zum Bild, das geprüft werden soll

@@ -1,6 +1,6 @@
 
 from torch.utils.data import Dataset
-from PIL import Image, ImageOps
+from PIL import Image
 import torch
 
 import os
