@@ -3,7 +3,7 @@
 *.jpeg
 
 .kaggle/
-data/*
+data/CASIA2/*
 
 
 *.pth
@@ -11,3 +11,5 @@ data/*
 
 __pycache__/
 .venv/
+
+.ruff_cache/
