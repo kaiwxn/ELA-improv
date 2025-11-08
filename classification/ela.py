@@ -1,22 +1,14 @@
 
 
-"""
-# Add dataset (create binary labled images with and without artifacts)
-#
-# First test ELA on example images --> check, if it works as expected
-# 
-# Add a neural network to train ELA on the dataset
-#
-# Export the model
-"""
 
 import io
 import numpy as np
 from PIL import Image, ImageChops, ImageEnhance
 
-def convert_to_ela_image(path, quality):
-
-    image = Image.open(path).convert('RGB')
+def convert_to_ela_image(image, quality):
+    """
+    Implementation of Error Level Analysis (ELA) for image manipulation detection.
+    """
 
     # Save the image at a lower quality level
     # JPEG in-memory speichern (kein temporäres Datei)
@@ -53,14 +45,17 @@ def detect_manipulation(ela_image, threshold=35.0):
 
 
 def main():
-    QUALITY = 95
+    QUALITY = 90
     THRESHOLD = 35.0
-    test_image_path = './z_lion.png'
-    saved_ela_img_path = f'./img/z_lion_ela{QUALITY}.png'
+    test_image_path = "data/CASIA2/Tp/Tp_D_CNN_M_N_nat00041_nat10123_11439.jpg"
+
+    saved_ela_img_path = f'manual/img/384x256imgtest{QUALITY}_enhanced.png'
 
     # ELA berechnen
-    ela = convert_to_ela_image(test_image_path, quality=QUALITY)
-    ela.save(saved_ela_img_path)
+    ela = convert_to_ela_image(Image.open(test_image_path).convert("RGB"), quality=QUALITY)
+
+    ela = ImageEnhance.Brightness(ela).enhance(2.0)  # Kontrast erhöhen für bessere Sichtbarkeit
+    # ela.save(saved_ela_img_path)
 
     ela.show()
     # Manipulation erkennen

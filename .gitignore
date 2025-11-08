@@ -1,1 +1,14 @@
-*.png
+
+classification/graphs/*
+*.pth
+
+.kaggle/
+data/CASIA2/*
+
+
+
+
+__pycache__/
+.venv/
+
+.ruff_cache/
